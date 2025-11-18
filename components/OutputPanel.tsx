@@ -15,6 +15,7 @@ interface OutputPanelProps {
   isLoading: Record<string, boolean>;
   sankeyRef: RefObject<HTMLDivElement>;
   customNode: React.ReactElement;
+  customLink?: React.ReactElement;
 }
 
 type Tab = 'diagram' | 'analysis' | 'chat';
@@ -29,7 +30,8 @@ export const OutputPanel: React.FC<OutputPanelProps> = ({
   onChatSubmit,
   isLoading,
   sankeyRef,
-  customNode
+  customNode,
+  customLink
 }) => {
   const [activeTab, setActiveTab] = useState<Tab>('diagram');
   const [chatInput, setChatInput] = useState('');
@@ -88,7 +90,13 @@ export const OutputPanel: React.FC<OutputPanelProps> = ({
             <div ref={sankeyRef} className="flex-grow min-h-[400px]">
                 {sankeyData.nodes.length > 0 && sankeyData.links.length > 0 ? (
                     <ResponsiveContainer width="100%" height="100%">
-                        <Sankey data={sankeyData} node={customNode} nodePadding={50} margin={{ top: 20, right: 150, bottom: 20, left: 150 }}>
+                        <Sankey 
+                            data={sankeyData} 
+                            node={customNode} 
+                            link={customLink}
+                            nodePadding={50} 
+                            margin={{ top: 20, right: 150, bottom: 20, left: 150 }}
+                        >
                             <Tooltip formatter={(value) => [`${value.toLocaleString()} ${unit}`, 'Value']} />
                         </Sankey>
                     </ResponsiveContainer>

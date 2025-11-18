@@ -1,6 +1,6 @@
 
 import React, { useState, useMemo, useCallback, useRef } from 'react';
-import { SankeyData, SankeyNode, SankeyLink, ExportFormat, Chat, Message, ToastProps } from './types';
+import { SankeyData, SankeyNode, SankeyLink, ExportFormat, Chat, Message, ToastProps, LinkColorMode, PaletteName } from './types';
 import { parseSankeyData, processSankeyData } from './utils/dataParser';
 import { exportDiagram } from './utils/exporter';
 import { getDeepAnalysis, getChatResponse, generateTextFormat } from './services/geminiService';
@@ -9,12 +9,13 @@ import { InputPanel } from './components/InputPanel';
 import { OutputPanel } from './components/OutputPanel';
 import { Header } from './components/Header';
 import { Toast } from './components/Toast';
-import { DEFAULT_NODES, DEFAULT_LINKS } from './constants';
+import { DEFAULT_NODES, DEFAULT_LINKS, COLOR_PALETTES } from './constants';
 
 // Define a custom node component for recharts
 const CustomSankeyNode = ({ x, y, width, height, index, payload, containerWidth, showValues, unit }: any) => {
+  if (isNaN(x) || isNaN(y) || isNaN(width) || isNaN(height)) return null;
   const isOut = x + width / 2 > containerWidth / 2;
-  const nodeName = payload.name;
+  const nodeName = payload?.name || '';
 
   return (
     <Layer key={`CustomNode${index}`}>
@@ -24,8 +25,8 @@ const CustomSankeyNode = ({ x, y, width, height, index, payload, containerWidth,
         x={isOut ? x - 6 : x + width + 6}
         y={y + height / 2}
         fontSize="14"
-        stroke="#334155"
-        className="dark:stroke-slate-300 pointer-events-none"
+        fill="#334155"
+        className="dark:fill-slate-300 pointer-events-none"
         alignmentBaseline="middle"
       >
         {nodeName} {showValues && <tspan fillOpacity="0.6" fontSize="12">({payload.value} {unit})</tspan>}
@@ -34,11 +35,83 @@ const CustomSankeyNode = ({ x, y, width, height, index, payload, containerWidth,
   );
 };
 
+const CustomSankeyLink = ({ sourceX, targetX, sourceY, targetY, linkWidth, index, payload, linkColorMode }: any) => {
+  if (
+    isNaN(sourceX) || isNaN(targetX) || 
+    isNaN(sourceY) || isNaN(targetY) || 
+    isNaN(linkWidth)
+  ) return null;
+
+  const sourceControlX = sourceX + (targetX - sourceX) * 0.5;
+  const targetControlX = targetX - (targetX - sourceX) * 0.5;
+
+  const d = `
+    M${sourceX},${sourceY + linkWidth / 2}
+    C${sourceControlX},${sourceY + linkWidth / 2} ${targetControlX},${targetY + linkWidth / 2} ${targetX},${targetY + linkWidth / 2}
+    L${targetX},${targetY - linkWidth / 2}
+    C${targetControlX},${targetY - linkWidth / 2} ${sourceControlX},${sourceY - linkWidth / 2} ${sourceX},${sourceY - linkWidth / 2}
+    Z
+  `;
+
+  const sourceColor = payload?.source?.color || '#94a3b8';
+  const targetColor = payload?.target?.color || '#94a3b8';
+  const gradientId = `linkGradient-${index}`;
+
+  // Link Color Logic
+  let fill = '#cbd5e1'; // default solid slate-300
+  let fillOpacity = 0.5;
+  let stroke = 'none';
+
+  if (linkColorMode === 'gradient') {
+    fill = `url(#${gradientId})`;
+    fillOpacity = 0.5;
+  } else if (linkColorMode === 'source') {
+    fill = sourceColor;
+    fillOpacity = 0.4;
+  } else if (linkColorMode === 'solid') {
+    fill = '#cbd5e1'; // slate-300
+    fillOpacity = 0.4;
+    // Dark mode adjustment could be done via CSS class or context, but inline styles are strictly computed here.
+    // For a simple solid mode, standard grey is fine.
+  }
+
+  return (
+    <Layer key={`CustomLink${index}`}>
+      {linkColorMode === 'gradient' && (
+        <defs>
+          <linearGradient id={gradientId} x1="0" x2="1" y1="0" y2="0">
+            <stop offset="0%" stopColor={sourceColor} />
+            <stop offset="100%" stopColor={targetColor} />
+          </linearGradient>
+        </defs>
+      )}
+      <path
+        d={d}
+        fill={fill}
+        fillOpacity={fillOpacity}
+        stroke={stroke}
+        onMouseEnter={(e) => {
+             e.currentTarget.style.fillOpacity = '0.7';
+        }}
+        onMouseLeave={(e) => {
+             e.currentTarget.style.fillOpacity = String(fillOpacity);
+        }}
+        className="transition-opacity duration-200 cursor-pointer"
+      />
+    </Layer>
+  );
+};
+
+
 export default function App() {
   const [nodesInput, setNodesInput] = useState<string>(DEFAULT_NODES);
   const [linksInput, setLinksInput] = useState<string>(DEFAULT_LINKS);
   const [unit, setUnit] = useState<string>('TWh');
   const [showValues, setShowValues] = useState<boolean>(true);
+  
+  // Visual Settings
+  const [linkColorMode, setLinkColorMode] = useState<LinkColorMode>('gradient');
+  const [selectedPalette, setSelectedPalette] = useState<PaletteName>('default');
 
   const [isLoading, setIsLoading] = useState<Record<string, boolean>>({
     analysis: false,
@@ -56,12 +129,13 @@ export default function App() {
   const sankeyRef = useRef<HTMLDivElement>(null);
 
   const { data, errors } = useMemo(() => {
-    const { nodes, links, errors: validationErrors } = parseSankeyData(nodesInput, linksInput);
+    const palette = COLOR_PALETTES[selectedPalette] || [];
+    const { nodes, links, errors: validationErrors } = parseSankeyData(nodesInput, linksInput, palette);
     if (validationErrors.length > 0) {
       return { data: { nodes: [], links: [] }, errors: validationErrors };
     }
     return { data: processSankeyData(nodes, links), errors: [] };
-  }, [nodesInput, linksInput]);
+  }, [nodesInput, linksInput, selectedPalette]);
 
   const handleGenerate = useCallback(async (type: 'analysis' | 'export' | 'chat', payload?: any) => {
     setIsLoading(prev => ({ ...prev, [type]: true }));
@@ -77,7 +151,6 @@ export default function App() {
         const stream = await getChatResponse(chatHistory, userMessage, data);
         let fullResponse = '';
         setChatHistory(prev => [...prev, { role: 'model', parts: [{ text: '' }] }]);
-        // FIX: The stream is now an async iterator of GenerateContentResponse. Use chunk.text to get the string content.
         for await (const chunk of stream) {
           fullResponse += chunk.text;
           setChatHistory(prev => {
@@ -122,6 +195,12 @@ export default function App() {
       unit={unit} 
     />
   ), [showValues, unit]);
+  
+  const memoizedCustomLink = useMemo(() => (
+    <CustomSankeyLink
+      linkColorMode={linkColorMode}
+    />
+  ), [linkColorMode]);
 
   return (
     <div className="min-h-screen flex flex-col font-sans">
@@ -137,6 +216,10 @@ export default function App() {
           errors={errors}
           showValues={showValues}
           setShowValues={setShowValues}
+          linkColorMode={linkColorMode}
+          setLinkColorMode={setLinkColorMode}
+          selectedPalette={selectedPalette}
+          setSelectedPalette={setSelectedPalette}
         />
         <OutputPanel
           sankeyData={data}
@@ -149,6 +232,7 @@ export default function App() {
           isLoading={isLoading}
           sankeyRef={sankeyRef}
           customNode={memoizedCustomNode}
+          customLink={memoizedCustomLink}
         />
       </main>
       {toast && <Toast message={toast.message} type={toast.type} onClose={() => setToast(null)} />}

@@ -37,3 +37,7 @@ export interface ToastProps {
   type: 'success' | 'error' | 'info';
   onClose?: () => void;
 }
+
+export type LinkColorMode = 'gradient' | 'source' | 'solid';
+
+export type PaletteName = 'default' | 'corporate' | 'warm' | 'cool' | 'nature';

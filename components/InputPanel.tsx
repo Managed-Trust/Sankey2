@@ -1,6 +1,8 @@
 
 import React from 'react';
 import { AlertIcon } from './icons';
+import { LinkColorMode, PaletteName } from '../types';
+import { COLOR_PALETTES } from '../constants';
 
 interface InputPanelProps {
   nodesInput: string;
@@ -12,6 +14,10 @@ interface InputPanelProps {
   errors: string[];
   showValues: boolean;
   setShowValues: (value: boolean) => void;
+  linkColorMode: LinkColorMode;
+  setLinkColorMode: (mode: LinkColorMode) => void;
+  selectedPalette: PaletteName;
+  setSelectedPalette: (palette: PaletteName) => void;
 }
 
 export const InputPanel: React.FC<InputPanelProps> = ({
@@ -24,6 +30,10 @@ export const InputPanel: React.FC<InputPanelProps> = ({
   errors,
   showValues,
   setShowValues,
+  linkColorMode,
+  setLinkColorMode,
+  selectedPalette,
+  setSelectedPalette,
 }) => {
 
   return (
@@ -54,30 +64,64 @@ export const InputPanel: React.FC<InputPanelProps> = ({
           placeholder="e.g., Source A, Target B, 100"
         />
       </div>
-      <div className="flex flex-col gap-2">
-        <div>
-            <label htmlFor="unit" className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
-            Unit Label (optional)
-            </label>
-            <input
-            type="text"
-            id="unit"
-            value={unit}
-            onChange={(e) => setUnit(e.target.value)}
-            className="w-full p-2 border border-slate-300 dark:border-slate-600 rounded-md bg-slate-50 dark:bg-slate-700 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
-            placeholder="e.g., MW, $, users"
-            />
+      
+      {/* Visual Settings Section */}
+      <div className="border-t border-slate-200 dark:border-slate-700 pt-4 space-y-4">
+        <h3 className="text-sm font-semibold text-slate-900 dark:text-slate-100 uppercase tracking-wider">Appearance</h3>
+        
+        <div className="grid grid-cols-2 gap-4">
+            <div>
+                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Color Palette</label>
+                <select 
+                    value={selectedPalette}
+                    onChange={(e) => setSelectedPalette(e.target.value as PaletteName)}
+                    className="w-full p-2 border border-slate-300 dark:border-slate-600 rounded-md bg-slate-50 dark:bg-slate-700 text-sm"
+                >
+                    {Object.keys(COLOR_PALETTES).map(key => (
+                        <option key={key} value={key}>{key.charAt(0).toUpperCase() + key.slice(1)}</option>
+                    ))}
+                </select>
+            </div>
+            <div>
+                 <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Link Coloring</label>
+                 <select
+                    value={linkColorMode}
+                    onChange={(e) => setLinkColorMode(e.target.value as LinkColorMode)}
+                    className="w-full p-2 border border-slate-300 dark:border-slate-600 rounded-md bg-slate-50 dark:bg-slate-700 text-sm"
+                 >
+                     <option value="gradient">Gradient</option>
+                     <option value="source">Source Node</option>
+                     <option value="solid">Solid Grey</option>
+                 </select>
+            </div>
         </div>
-        <div className="flex items-center justify-between py-2 border-t border-slate-200 dark:border-slate-700 mt-2">
-            <span className="text-sm font-medium text-slate-700 dark:text-slate-300">Show Values on Diagram</span>
-            <button
-                onClick={() => setShowValues(!showValues)}
-                className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 ${showValues ? 'bg-indigo-600' : 'bg-slate-300 dark:bg-slate-600'}`}
-            >
-                <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${showValues ? 'translate-x-6' : 'translate-x-1'}`} />
-            </button>
+
+        <div className="flex flex-col gap-2">
+            <div>
+                <label htmlFor="unit" className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
+                Unit Label (optional)
+                </label>
+                <input
+                type="text"
+                id="unit"
+                value={unit}
+                onChange={(e) => setUnit(e.target.value)}
+                className="w-full p-2 border border-slate-300 dark:border-slate-600 rounded-md bg-slate-50 dark:bg-slate-700 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                placeholder="e.g., MW, $, users"
+                />
+            </div>
+            <div className="flex items-center justify-between py-2 mt-2">
+                <span className="text-sm font-medium text-slate-700 dark:text-slate-300">Show Values on Diagram</span>
+                <button
+                    onClick={() => setShowValues(!showValues)}
+                    className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 ${showValues ? 'bg-indigo-600' : 'bg-slate-300 dark:bg-slate-600'}`}
+                >
+                    <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${showValues ? 'translate-x-6' : 'translate-x-1'}`} />
+                </button>
+            </div>
         </div>
       </div>
+
       {errors.length > 0 && (
         <div className="bg-red-100 dark:bg-red-900 border-l-4 border-red-500 text-red-700 dark:text-red-200 p-4 rounded-md">
           <div className="flex">

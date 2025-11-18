@@ -20,14 +20,14 @@ const generateColor = (str: string): string => {
 };
 
 
-export const parseSankeyData = (nodesInput: string, linksInput: string) => {
+export const parseSankeyData = (nodesInput: string, linksInput: string, palette: string[] = []) => {
   const errors: string[] = [];
   
   const nodes: SankeyNode[] = nodesInput
     .split('\n')
     .map(line => line.trim())
     .filter(Boolean)
-    .map(line => {
+    .map((line, index) => {
       // Support "Name, Color" format
       const parts = line.split(',');
       if (parts.length >= 2) {
@@ -37,8 +37,15 @@ export const parseSankeyData = (nodesInput: string, linksInput: string) => {
         return { name, color: colorStr };
       }
       
-      // Fallback to auto-generated color
-      return { name: line, color: generateColor(line) };
+      // Fallback to palette or auto-generated color
+      let color = '';
+      if (palette.length > 0) {
+        color = palette[index % palette.length];
+      } else {
+        color = generateColor(line);
+      }
+
+      return { name: line, color };
     });
 
   const nodeNames = new Set(nodes.map(n => n.name));

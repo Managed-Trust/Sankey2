@@ -51,3 +51,11 @@ Grid Storage,Commercial Use,50
 Grid Storage,Industrial Use,40
 Grid Storage,Energy Loss,5
 `.trim();
+
+export const COLOR_PALETTES: Record<string, string[]> = {
+  default: ['#6366f1', '#8b5cf6', '#d946ef', '#f43f5e', '#f97316', '#eab308', '#84cc16', '#10b981', '#06b6d4', '#3b82f6'],
+  corporate: ['#334155', '#475569', '#64748b', '#94a3b8', '#cbd5e1', '#9ca3af'],
+  warm: ['#e11d48', '#db2777', '#c026d3', '#9333ea', '#ea580c', '#d97706'],
+  cool: ['#2563eb', '#0284c7', '#0891b2', '#0d9488', '#4f46e5', '#6366f1'],
+  nature: ['#16a34a', '#65a30d', '#d97706', '#059669', '#0891b2', '#84cc16'],
+};
