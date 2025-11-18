@@ -1,7 +1,6 @@
 
-import React, { useState } from 'react';
-import { SankeyNode, AspectRatio } from '../types';
-import { SparklesIcon, AlertIcon } from './icons';
+import React from 'react';
+import { AlertIcon } from './icons';
 
 interface InputPanelProps {
   nodesInput: string;
@@ -11,9 +10,6 @@ interface InputPanelProps {
   unit: string;
   setUnit: (value: string) => void;
   errors: string[];
-  onGenerate: (type: 'icon', payload: { nodeName: string; prompt: string; aspectRatio: AspectRatio }) => void;
-  isLoading: boolean;
-  availableNodes: SankeyNode[];
   showValues: boolean;
   setShowValues: (value: boolean) => void;
 }
@@ -26,24 +22,12 @@ export const InputPanel: React.FC<InputPanelProps> = ({
   unit,
   setUnit,
   errors,
-  onGenerate,
-  isLoading,
-  availableNodes,
   showValues,
   setShowValues,
 }) => {
-  const [selectedNode, setSelectedNode] = useState<string>('');
-  const [iconPrompt, setIconPrompt] = useState<string>('');
-  const [aspectRatio, setAspectRatio] = useState<AspectRatio>('1:1');
-
-  const handleIconGeneration = () => {
-    if (selectedNode && iconPrompt) {
-      onGenerate('icon', { nodeName: selectedNode, prompt: iconPrompt, aspectRatio });
-    }
-  };
 
   return (
-    <div className="bg-white dark:bg-slate-800 rounded-lg shadow-lg p-6 flex flex-col space-y-4 overflow-y-auto">
+    <div className="bg-white dark:bg-slate-800 rounded-lg shadow-lg p-6 flex flex-col space-y-4 overflow-y-auto h-full">
       <div>
         <label htmlFor="nodes" className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
           Nodes (one per line, optional color e.g., "Node, #ff0000")
@@ -107,37 +91,6 @@ export const InputPanel: React.FC<InputPanelProps> = ({
           </div>
         </div>
       )}
-      <div className="border-t border-slate-200 dark:border-slate-700 pt-4">
-        <h3 className="text-lg font-semibold flex items-center gap-2"><SparklesIcon className="h-5 w-5 text-amber-500" /> AI Icon Generation</h3>
-        <p className="text-sm text-slate-500 dark:text-slate-400 mb-2">Generate a unique icon for a node using AI.</p>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <select value={selectedNode} onChange={e => {
-              setSelectedNode(e.target.value);
-              setIconPrompt(e.target.value);
-            }} className="p-2 border border-slate-300 dark:border-slate-600 rounded-md bg-slate-50 dark:bg-slate-700">
-            <option value="">Select a node...</option>
-            {availableNodes.map(node => <option key={node.name} value={node.name}>{node.name}</option>)}
-          </select>
-          <input type="text" value={iconPrompt} onChange={e => setIconPrompt(e.target.value)} placeholder="Icon prompt..." className="p-2 border border-slate-300 dark:border-slate-600 rounded-md bg-slate-50 dark:bg-slate-700" />
-        </div>
-        <div className="mt-2">
-            <label className="text-sm font-medium text-slate-700 dark:text-slate-300 mr-2">Aspect Ratio:</label>
-            <select value={aspectRatio} onChange={e => setAspectRatio(e.target.value as AspectRatio)} className="p-2 border border-slate-300 dark:border-slate-600 rounded-md bg-slate-50 dark:bg-slate-700">
-                <option value="1:1">1:1</option>
-                <option value="16:9">16:9</option>
-                <option value="9:16">9:16</option>
-                <option value="4:3">4:3</option>
-                <option value="3:4">3:4</option>
-            </select>
-        </div>
-        <button
-          onClick={handleIconGeneration}
-          disabled={!selectedNode || !iconPrompt || isLoading}
-          className="mt-4 w-full flex justify-center items-center gap-2 bg-indigo-600 text-white font-semibold py-2 px-4 rounded-md hover:bg-indigo-700 disabled:bg-indigo-300 disabled:cursor-not-allowed transition-colors"
-        >
-          {isLoading ? 'Generating...' : 'Generate Icon'}
-        </button>
-      </div>
     </div>
   );
 };

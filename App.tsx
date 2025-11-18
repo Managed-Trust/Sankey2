@@ -1,31 +1,27 @@
 
 import React, { useState, useMemo, useCallback, useRef } from 'react';
-// FIX: Consolidate type imports from './types' and import ToastProps.
-import { SankeyData, SankeyNode, SankeyLink, ExportFormat, AspectRatio, Chat, Message, ToastProps } from './types';
+import { SankeyData, SankeyNode, SankeyLink, ExportFormat, Chat, Message, ToastProps } from './types';
 import { parseSankeyData, processSankeyData } from './utils/dataParser';
 import { exportDiagram } from './utils/exporter';
-import { getDeepAnalysis, getChatResponse, generateTextFormat, generateNodeIcon } from './services/geminiService';
+import { getDeepAnalysis, getChatResponse, generateTextFormat } from './services/geminiService';
 import { Sankey, Tooltip, Layer, Rectangle, ResponsiveContainer } from 'recharts';
 import { InputPanel } from './components/InputPanel';
 import { OutputPanel } from './components/OutputPanel';
 import { Header } from './components/Header';
-// FIX: Remove ToastProps import from here, as it's now imported from ./types.
 import { Toast } from './components/Toast';
 import { DEFAULT_NODES, DEFAULT_LINKS } from './constants';
 
-// Define a custom node component for recharts to render icons
-const CustomSankeyNode = ({ x, y, width, height, index, payload, containerWidth, nodeIcons, showValues, unit }: any) => {
+// Define a custom node component for recharts
+const CustomSankeyNode = ({ x, y, width, height, index, payload, containerWidth, showValues, unit }: any) => {
   const isOut = x + width / 2 > containerWidth / 2;
   const nodeName = payload.name;
-  const iconUrl = nodeIcons[nodeName];
 
   return (
     <Layer key={`CustomNode${index}`}>
       <Rectangle x={x} y={y} width={width} height={height} fill={payload.color || '#6366f1'} fillOpacity="1" />
-      {iconUrl && <image href={iconUrl} x={isOut ? x - 30 : x + width + 5} y={y + height/2 - 12} height="24" width="24" />}
       <text
         textAnchor={isOut ? 'end' : 'start'}
-        x={isOut ? x - 6 : x + width + (iconUrl ? 32 : 6)}
+        x={isOut ? x - 6 : x + width + 6}
         y={y + height / 2}
         fontSize="14"
         stroke="#334155"
@@ -48,14 +44,12 @@ export default function App() {
     analysis: false,
     chat: false,
     export: false,
-    icon: false,
   });
 
   const [analysisResult, setAnalysisResult] = useState<string>('');
   const [chatHistory, setChatHistory] = useState<Chat[]>([
     { role: 'model', parts: [{ text: "Hello! I'm your Sankey assistant. How can I help you with this data?" }] }
   ]);
-  const [nodeIcons, setNodeIcons] = useState<Record<string, string>>({});
   
   const [toast, setToast] = useState<ToastProps | null>(null);
 
@@ -69,7 +63,7 @@ export default function App() {
     return { data: processSankeyData(nodes, links), errors: [] };
   }, [nodesInput, linksInput]);
 
-  const handleGenerate = useCallback(async (type: 'analysis' | 'export' | 'chat' | 'icon', payload?: any) => {
+  const handleGenerate = useCallback(async (type: 'analysis' | 'export' | 'chat', payload?: any) => {
     setIsLoading(prev => ({ ...prev, [type]: true }));
     setToast(null);
 
@@ -84,7 +78,6 @@ export default function App() {
         let fullResponse = '';
         setChatHistory(prev => [...prev, { role: 'model', parts: [{ text: '' }] }]);
         // FIX: The stream is now an async iterator of GenerateContentResponse. Use chunk.text to get the string content.
-        // This also resolves the async iterator error.
         for await (const chunk of stream) {
           fullResponse += chunk.text;
           setChatHistory(prev => {
@@ -109,11 +102,8 @@ export default function App() {
           a.click();
           URL.revokeObjectURL(url);
         }
-      } else if (type === 'icon') {
-        const { nodeName, prompt, aspectRatio } = payload;
-        const iconData = await generateNodeIcon(prompt, aspectRatio);
-        setNodeIcons(prev => ({...prev, [nodeName]: `data:image/jpeg;base64,${iconData}`}));
-      }
+      } 
+      
       if (type !== 'chat') {
         setToast({ message: `${type.charAt(0).toUpperCase() + type.slice(1)} generated successfully!`, type: 'success' });
       }
@@ -128,11 +118,10 @@ export default function App() {
 
   const memoizedCustomNode = useMemo(() => (
     <CustomSankeyNode 
-      nodeIcons={nodeIcons} 
       showValues={showValues} 
       unit={unit} 
     />
-  ), [nodeIcons, showValues, unit]);
+  ), [showValues, unit]);
 
   return (
     <div className="min-h-screen flex flex-col font-sans">
@@ -146,9 +135,6 @@ export default function App() {
           unit={unit}
           setUnit={setUnit}
           errors={errors}
-          onGenerate={handleGenerate}
-          isLoading={isLoading.icon}
-          availableNodes={data.nodes}
           showValues={showValues}
           setShowValues={setShowValues}
         />

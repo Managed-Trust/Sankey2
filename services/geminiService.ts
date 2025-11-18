@@ -1,6 +1,6 @@
 
 import { GoogleGenAI, Type } from "@google/genai";
-import { SankeyNode, SankeyLink, SankeyData, ExportFormat, Chat, AspectRatio } from '../types';
+import { SankeyNode, SankeyLink, SankeyData, ExportFormat, Chat } from '../types';
 
 if (!process.env.API_KEY) {
     throw new Error("API_KEY environment variable not set");
@@ -80,23 +80,4 @@ export const generateTextFormat = async (format: ExportFormat, data: SankeyData)
     const response = await ai.models.generateContent({ model, contents: prompt });
     // Clean up the response to remove markdown code block fences
     return response.text.replace(/```[a-zA-Z]*\n/g, '').replace(/```/g, '').trim();
-};
-
-export const generateNodeIcon = async (prompt: string, aspectRatio: AspectRatio): Promise<string> => {
-    const model = 'imagen-4.0-generate-001';
-    const response = await ai.models.generateImages({
-        model: model,
-        prompt: `A simple, clear, flat, vector-style icon for "${prompt}" on a transparent background.`,
-        config: {
-            numberOfImages: 1,
-            outputMimeType: 'image/jpeg',
-            aspectRatio: aspectRatio,
-        },
-    });
-
-    if (!response.generatedImages || response.generatedImages.length === 0) {
-        throw new Error("Image generation failed to produce an image.");
-    }
-
-    return response.generatedImages[0].image.imageBytes;
 };
