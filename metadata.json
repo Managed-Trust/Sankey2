@@ -1,0 +1,5 @@
+{
+  "name": "AI-Powered Sankey Diagram Generator",
+  "description": "An intelligent tool to create, analyze, and export Sankey diagrams from flow data. Leverages Gemini to provide deep analysis, generate reports in various formats, and even create custom icons for your diagram nodes.",
+  "requestFramePermissions": []
+}
